@@ -27,6 +27,10 @@ def domestic_travel(file_path, primary_ssd_path):
 
 def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path):
     """Test transferring a file from primary to secondary SSD and back."""
+    if not os.path.exists(secondary_ssd_path):
+        print("Secondary SSD path is not accessible. Please check the connection.")
+        return
+
     print("Starting interstate travel test...")
     start_suite_time = time.time()
 
