@@ -22,53 +22,67 @@ def begin_travel(source, destination):
         print(f"Error during file transfer from {source} to {destination}: {e}")
         return None
 
-def domestic_travel(file_path, primary_ssd_path):
+def domestic_travel(file_path, primary_ssd_path, cycles=1):
     """Test transferring a file within the primary SSD."""
     print("Starting internal file transfer test...")
-    start_suite_time = time.time()
+    total_suite_time = 0
 
-    destination_path = os.path.join(primary_ssd_path, 'internal_test_copy')
-    transfer_time = begin_travel(file_path, destination_path)
-    
-    if transfer_time is not None:
-        print(f"Internal file transfer completed in {transfer_time:.2f} seconds.")
-        os.remove(destination_path)  # Clean up
-    else:
-        print("Internal file transfer failed.")
+    for cycle in range(cycles):
+        print(f"Cycle {cycle + 1} of {cycles}")
+        start_suite_time = time.time()
 
-    end_suite_time = time.time()
-    total_suite_time = end_suite_time - start_suite_time
-    print(f"Total time for internal file transfer test suite: {total_suite_time:.2f} seconds.\n")
+        destination_path = os.path.join(primary_ssd_path, 'internal_test_copy')
+        transfer_time = begin_travel(file_path, destination_path)
+        
+        if transfer_time is not None:
+            print(f"Internal file transfer completed in {transfer_time:.2f} seconds.")
+            os.remove(destination_path)  # Clean up
+        else:
+            print("Internal file transfer failed.")
 
-def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path):
+        end_suite_time = time.time()
+        cycle_time = end_suite_time - start_suite_time
+        total_suite_time += cycle_time
+        print(f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.\n")
+
+    print(f"Total time for {cycles} internal file transfer cycles: {total_suite_time:.2f} seconds.\n")
+
+def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1):
     """Test transferring a file from primary to secondary SSD and back."""
     print("Starting external file transfer test...")
-    start_suite_time = time.time()
+    total_suite_time = 0
 
-    # Transfer from primary to secondary
-    destination_path = os.path.join(secondary_ssd_path, 'external_test_copy')
-    transfer_time_to_secondary = begin_travel(file_path, destination_path)
-    
-    if transfer_time_to_secondary is not None:
-        print(f"Transfer to secondary SSD completed in {transfer_time_to_secondary:.2f} seconds.")
+    for cycle in range(cycles):
+        print(f"Cycle {cycle + 1} of {cycles}")
+        start_suite_time = time.time()
+
+        # Transfer from primary to secondary
+        destination_path = os.path.join(secondary_ssd_path, 'external_test_copy')
+        transfer_time_to_secondary = begin_travel(file_path, destination_path)
         
-        # Transfer back from secondary to primary
-        return_path = os.path.join(primary_ssd_path, 'external_test_return_copy')
-        transfer_time_to_primary = begin_travel(destination_path, return_path)
-        
-        if transfer_time_to_primary is not None:
-            print(f"Transfer back to primary SSD completed in {transfer_time_to_primary:.2f} seconds.")
-            os.remove(return_path)  # Clean up
+        if transfer_time_to_secondary is not None:
+            print(f"Transfer to secondary SSD completed in {transfer_time_to_secondary:.2f} seconds.")
+            
+            # Transfer back from secondary to primary
+            return_path = os.path.join(primary_ssd_path, 'external_test_return_copy')
+            transfer_time_to_primary = begin_travel(destination_path, return_path)
+            
+            if transfer_time_to_primary is not None:
+                print(f"Transfer back to primary SSD completed in {transfer_time_to_primary:.2f} seconds.")
+                os.remove(return_path)  # Clean up
+            else:
+                print("Transfer back to primary SSD failed.")
+            
+            os.remove(destination_path)  # Clean up
         else:
-            print("Transfer back to primary SSD failed.")
-        
-        os.remove(destination_path)  # Clean up
-    else:
-        print("Transfer to secondary SSD failed.")
+            print("Transfer to secondary SSD failed.")
 
-    end_suite_time = time.time()
-    total_suite_time = end_suite_time - start_suite_time
-    print(f"Total time for interstate travel test suite: {total_suite_time:.2f} seconds.\n")
+        end_suite_time = time.time()
+        cycle_time = end_suite_time - start_suite_time
+        total_suite_time += cycle_time
+        print(f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.\n")
+
+    print(f"Total time for {cycles} external file transfer cycles: {total_suite_time:.2f} seconds.\n")
 
 def main():
     parser = argparse.ArgumentParser(description="NVMe SSD File Transfer Test")
@@ -76,6 +90,7 @@ def main():
     parser.add_argument('secondary_ssd_path', type=str, help='Path to the secondary SSD')
     parser.add_argument('--file-size', type=int, default=50, help='Size of the test file in GB (default: 50GB)')
     parser.add_argument('--test', choices=['internal', 'external', 'both'], default='both', help='Specify which test to run: internal, external, or both (default: both)')
+    parser.add_argument('--cycles', type=int, default=1, help='Number of test cycles to run (default: 1)')
     args = parser.parse_args()
 
     test_file_path = os.path.join(args.primary_ssd_path, 'test_file')
@@ -94,9 +109,9 @@ def main():
 
     # Run the specified tests
     if args.test in ['internal', 'both']:
-        domestic_travel(test_file_path, args.primary_ssd_path)
+        domestic_travel(test_file_path, args.primary_ssd_path, args.cycles)
     if args.test in ['external', 'both']:
-        interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path)
+        interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path, args.cycles)
 
 if __name__ == "__main__":
     main()
