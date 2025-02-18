@@ -75,6 +75,7 @@ def main():
     parser.add_argument('primary_ssd_path', type=str, help='Path to the primary SSD')
     parser.add_argument('secondary_ssd_path', type=str, help='Path to the secondary SSD')
     parser.add_argument('--file-size', type=int, default=50, help='Size of the test file in GB (default: 50GB)')
+    parser.add_argument('--test', choices=['internal', 'external', 'both'], default='both', help='Specify which test to run: internal, external, or both (default: both)')
     args = parser.parse_args()
 
     test_file_path = os.path.join(args.primary_ssd_path, 'test_file')
@@ -91,8 +92,11 @@ def main():
     if not os.path.exists(test_file_path):
         create_test_file(test_file_path, args.file_size)
 
-    domestic_travel(test_file_path, args.primary_ssd_path)
-    interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path)
+    # Run the specified tests
+    if args.test in ['internal', 'both']:
+        domestic_travel(test_file_path, args.primary_ssd_path)
+    if args.test in ['external', 'both']:
+        interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path)
 
 if __name__ == "__main__":
     main()
