@@ -3,6 +3,14 @@ import shutil
 import time
 import argparse
 
+def create_test_file(file_path, size_gb=50):
+    """Create a test file of the specified size in GB."""
+    print(f"Creating a test file of size {size_gb}GB at {file_path}...")
+    with open(file_path, 'wb') as f:
+        f.seek(size_gb * 1024 * 1024 * 1024 - 1)
+        f.write(b'\0')
+    print("Test file created successfully.")
+
 def begin_travel(source, destination):
     """Transfer a file from source to destination and measure the time taken."""
     try:
@@ -64,15 +72,14 @@ def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path):
 
 def main():
     parser = argparse.ArgumentParser(description="NVMe SSD File Transfer Test")
-    parser.add_argument('test_file_path', type=str, help='Path to the test file')
     parser.add_argument('primary_ssd_path', type=str, help='Path to the primary SSD')
     parser.add_argument('secondary_ssd_path', type=str, help='Path to the secondary SSD')
+    parser.add_argument('--file-size', type=int, default=50, help='Size of the test file in GB (default: 50GB)')
     args = parser.parse_args()
 
+    test_file_path = os.path.join(args.primary_ssd_path, 'test_file')
+
     # Ensure paths are valid
-    if not os.path.exists(args.test_file_path):
-        print(f"Test file path does not exist: {args.test_file_path}")
-        return
     if not os.path.exists(args.primary_ssd_path):
         print(f"Primary SSD path does not exist: {args.primary_ssd_path}")
         return
@@ -80,8 +87,12 @@ def main():
         print(f"Secondary SSD path does not exist: {args.secondary_ssd_path}")
         return
 
-    domestic_travel(args.test_file_path, args.primary_ssd_path)
-    interstate_travel(args.test_file_path, args.primary_ssd_path, args.secondary_ssd_path)
+    # Create the test file if it doesn't exist
+    if not os.path.exists(test_file_path):
+        create_test_file(test_file_path, args.file_size)
+
+    domestic_travel(test_file_path, args.primary_ssd_path)
+    interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path)
 
 if __name__ == "__main__":
     main()
