@@ -113,5 +113,9 @@ def main():
     if args.test in ['external', 'both']:
         interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path, args.cycles)
 
+    # Delete the test file after all tests are done
+    if os.path.exists(test_file_path):
+        os.remove(test_file_path)
+
 if __name__ == "__main__":
     main()
