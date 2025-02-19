@@ -97,7 +97,7 @@ def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1)
 def main():
     parser = argparse.ArgumentParser(description="NVMe SSD File Transfer Test")
     parser.add_argument('primary_ssd_path', type=str, help='Path to the primary SSD')
-    parser.add_argument('secondary_ssd_path', type=str, help='Path to the secondary SSD')
+    parser.add_argument('--secondary_ssd_path', type=str, help='Path to the secondary SSD (required for external test)')
     parser.add_argument('--file-size', type=int, default=50, help='Size of the test file in GB (default: 50GB)')
     parser.add_argument('--test', choices=['internal', 'external', 'both'], default='both', help='Specify which test to run: internal, external, or both (default: both)')
     parser.add_argument('--cycles', type=int, default=1, help='Number of test cycles to run (default: 1)')
@@ -108,11 +108,16 @@ def main():
 
     test_file_path = os.path.join(args.primary_ssd_path, 'test_file')
 
-    # Ensure paths are valid
+    # Ensure primary path is valid
     if not os.path.exists(args.primary_ssd_path):
         logging.error(f"Primary SSD path does not exist: {args.primary_ssd_path}")
         return
-    if not os.path.exists(args.secondary_ssd_path):
+
+    # Ensure secondary path is valid if needed
+    if args.test in ['external', 'both'] and not args.secondary_ssd_path:
+        logging.error("Secondary SSD path is required for external test.")
+        return
+    if args.secondary_ssd_path and not os.path.exists(args.secondary_ssd_path):
         logging.error(f"Secondary SSD path does not exist: {args.secondary_ssd_path}")
         return
 
