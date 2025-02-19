@@ -2,14 +2,24 @@ import os
 import shutil
 import time
 import argparse
+import logging
+
+def setup_logging(log_file='test_log.log'):
+    """Set up logging configuration."""
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
 def create_test_file(file_path, size_gb=50):
     """Create a test file of the specified size in GB."""
-    print(f"Creating a test file of size {size_gb}GB at {file_path}...")
+    logging.info(f"Creating a test file of size {size_gb}GB at {file_path}...")
     with open(file_path, 'wb') as f:
         f.seek(size_gb * 1024 * 1024 * 1024 - 1)
         f.write(b'\0')
-    print("Test file created successfully.")
+    logging.info("Test file created successfully.")
 
 def begin_travel(source, destination):
     """Transfer a file from source to destination and measure the time taken."""
@@ -19,41 +29,41 @@ def begin_travel(source, destination):
         end_time = time.time()
         return end_time - start_time
     except Exception as e:
-        print(f"Error during file transfer from {source} to {destination}: {e}")
+        logging.error(f"Error during file transfer from {source} to {destination}: {e}")
         return None
 
 def domestic_travel(file_path, primary_ssd_path, cycles=1):
     """Test transferring a file within the primary SSD."""
-    print("Starting internal file transfer test...")
+    logging.info("Starting internal file transfer test...")
     total_suite_time = 0
 
     for cycle in range(cycles):
-        print(f"Cycle {cycle + 1} of {cycles}")
+        logging.info(f"Cycle {cycle + 1} of {cycles}")
         start_suite_time = time.time()
 
         destination_path = os.path.join(primary_ssd_path, 'internal_test_copy')
         transfer_time = begin_travel(file_path, destination_path)
         
         if transfer_time is not None:
-            print(f"Internal file transfer completed in {transfer_time:.2f} seconds.")
+            logging.info(f"Internal file transfer completed in {transfer_time:.2f} seconds.")
             os.remove(destination_path)  # Clean up
         else:
-            print("Internal file transfer failed.")
+            logging.warning("Internal file transfer failed.")
 
         end_suite_time = time.time()
         cycle_time = end_suite_time - start_suite_time
         total_suite_time += cycle_time
-        print(f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.\n")
+        logging.info(f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.")
 
-    print(f"Total time for {cycles} internal file transfer cycles: {total_suite_time:.2f} seconds.\n")
+    logging.info(f"Total time for {cycles} internal file transfer cycles: {total_suite_time:.2f} seconds.")
 
 def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1):
     """Test transferring a file from primary to secondary SSD and back."""
-    print("Starting external file transfer test...")
+    logging.info("Starting external file transfer test...")
     total_suite_time = 0
 
     for cycle in range(cycles):
-        print(f"Cycle {cycle + 1} of {cycles}")
+        logging.info(f"Cycle {cycle + 1} of {cycles}")
         start_suite_time = time.time()
 
         # Transfer from primary to secondary
@@ -61,28 +71,28 @@ def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1)
         transfer_time_to_secondary = begin_travel(file_path, destination_path)
         
         if transfer_time_to_secondary is not None:
-            print(f"Transfer to secondary SSD completed in {transfer_time_to_secondary:.2f} seconds.")
+            logging.info(f"Transfer to secondary SSD completed in {transfer_time_to_secondary:.2f} seconds.")
             
             # Transfer back from secondary to primary
             return_path = os.path.join(primary_ssd_path, 'external_test_return_copy')
             transfer_time_to_primary = begin_travel(destination_path, return_path)
             
             if transfer_time_to_primary is not None:
-                print(f"Transfer back to primary SSD completed in {transfer_time_to_primary:.2f} seconds.")
+                logging.info(f"Transfer back to primary SSD completed in {transfer_time_to_primary:.2f} seconds.")
                 os.remove(return_path)  # Clean up
             else:
-                print("Transfer back to primary SSD failed.")
+                logging.warning("Transfer back to primary SSD failed.")
             
             os.remove(destination_path)  # Clean up
         else:
-            print("Transfer to secondary SSD failed.")
+            logging.warning("Transfer to secondary SSD failed.")
 
         end_suite_time = time.time()
         cycle_time = end_suite_time - start_suite_time
         total_suite_time += cycle_time
-        print(f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.\n")
+        logging.info(f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.")
 
-    print(f"Total time for {cycles} external file transfer cycles: {total_suite_time:.2f} seconds.\n")
+    logging.info(f"Total time for {cycles} external file transfer cycles: {total_suite_time:.2f} seconds.")
 
 def main():
     parser = argparse.ArgumentParser(description="NVMe SSD File Transfer Test")
@@ -91,16 +101,19 @@ def main():
     parser.add_argument('--file-size', type=int, default=50, help='Size of the test file in GB (default: 50GB)')
     parser.add_argument('--test', choices=['internal', 'external', 'both'], default='both', help='Specify which test to run: internal, external, or both (default: both)')
     parser.add_argument('--cycles', type=int, default=1, help='Number of test cycles to run (default: 1)')
+    parser.add_argument('--log-file', type=str, default='test_log.log', help='Log file path (default: test_log.log)')
     args = parser.parse_args()
+
+    setup_logging(args.log_file)
 
     test_file_path = os.path.join(args.primary_ssd_path, 'test_file')
 
     # Ensure paths are valid
     if not os.path.exists(args.primary_ssd_path):
-        print(f"Primary SSD path does not exist: {args.primary_ssd_path}")
+        logging.error(f"Primary SSD path does not exist: {args.primary_ssd_path}")
         return
     if not os.path.exists(args.secondary_ssd_path):
-        print(f"Secondary SSD path does not exist: {args.secondary_ssd_path}")
+        logging.error(f"Secondary SSD path does not exist: {args.secondary_ssd_path}")
         return
 
     # Create the test file if it doesn't exist
