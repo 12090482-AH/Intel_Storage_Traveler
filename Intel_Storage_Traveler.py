@@ -155,7 +155,7 @@ def main():
     parser.add_argument('primary_ssd_path', type=str, help='Path to the primary SSD')
     parser.add_argument('--secondary_ssd_path', type=str, help='Path to the secondary SSD (required for external test)')
     parser.add_argument('--file-size', type=int, default=50, help='Size of the test file in GB (default: 50GB)')
-    parser.add_argument('--test', choices=['internal', 'external', 'both'], default='both', help='Specify which test to run: internal, external, or both (default: both)')
+    parser.add_argument('--test', choices=['internal', 'external', 'sequential', 'all'], default='all', help='Specify which test to run: internal, external, sequential, or all (default: all)')
     parser.add_argument('--cycles', type=int, default=1, help='Number of test cycles to run (default: 1)')
     parser.add_argument('--log-file', type=str, default='test_log.log', help='Log file path (default: test_log.log)')
     args = parser.parse_args()
@@ -172,7 +172,7 @@ def main():
         return
 
     # Ensure secondary path is valid if needed
-    if args.test in ['external', 'both'] and not args.secondary_ssd_path:
+    if args.test in ['external', 'all'] and not args.secondary_ssd_path:
         message = "Secondary SSD path is required for external test."
         print(message)
         logging.error(message)
@@ -188,14 +188,13 @@ def main():
         create_test_file(test_file_path, args.file_size)
 
     # Run the specified tests
-    if args.test in ['internal', 'both']:
+    if args.test in ['internal', 'all']:
         domestic_travel(test_file_path, args.primary_ssd_path, args.cycles)
-    if args.test in ['external', 'both']:
+    if args.test in ['external', 'all']:
         interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path, args.cycles)
-
-    # Perform sequential read and write tests
-    train_travel(test_file_path, args.file_size, operation='write')
-    train_travel(test_file_path, args.file_size, operation='read')
+    if args.test in ['sequential', 'all']:
+        train_travel(test_file_path, args.file_size, operation='write')
+        train_travel(test_file_path, args.file_size, operation='read')
 
     # Delete the test file after all tests are done
     if os.path.exists(test_file_path):
