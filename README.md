@@ -8,39 +8,51 @@ The tool is intended for use in PCL publications to ensure consistent and reliab
 
 ## Features
 Automatic Test File Creation: Generates a test file of a specified size (default 50GB) if it doesn't already exist.
-Flexible Testing Options: Users can choose to run only domestic travel tests, only interstate travel tests, or both.
-Detailed Timing Information: Measures and reports the time taken for each file transfer operation.
-Command-Line Interface: Easily specify test parameters and options via command-line arguments.
+
+Detailed Timing Information: Measures and reports the time taken for each file transfer operation and sequential I/O operations.
+
+Command-Line Interface: Easily specify test parameters and options via command-line arguments. This will enable end users to utilize the batch/bash shell scripting.
 
 ## Requirements
 Python 3.10
-Sufficient disk space for creating large test files
-Permissions to read from and write to the specified SSD paths
+Sufficient disk space for creating large test files.
+Permissions to read from and write to the specified SSD paths.
+dd command available (for sequential tests on Linux/macOS).
+
+## Installation
+git clone https://github.com/12090482-AH/Intel_Storage_Traveler.git
 
 ## Usage
 Run the tool using the following command:
 
-py Intel_Storage_Traveler.py <primary_ssd_path> <secondary_ssd_path> [--file-size <size_in_gb>] [--test <test_type>]
+py Intel_Storage_Traveler.py <primary_ssd_path> [--secondary_ssd_path <secondary_ssd_path>] [--file-size <size_in_gb>] [--test <test_type>] [--cycles <number_of_cycles>] [--log-file <log_file_path>]
 
 ### Arguments
-
 <primary_ssd_path>: Path to the primary SSD.
 
-<secondary_ssd_path>: Path to the secondary SSD.
-
 ### Options
+--secondary_ssd_path <secondary_ssd_path>: Path to the secondary SSD (required for external test).
 
 --file-size <size_in_gb>: Specify the size of the test file in gigabytes. Default is 50GB.
---test <test_type>: Specify which test to run. Options are internal, external (depends on what interface you use, external drive can be USB, TBT, network drive, or 2nd NVMe SSD), or both. Default is both.
+
+--test <test_type>: Specify which test to run. Options are internal, external, sequential, or all. Default is all.
+
+--cycles <number_of_cycles>: Number of test cycles to run. Default is 1.
+
+--log-file <log_file_path>: Path to the log file. Default is test_log.log.
 
 ### Examples
 Run both tests with a 50GB test file:
 
-py Intel_Storage_Traveler.py </path/to/primary/ssd> </path/to/secondary/ssd>
+py Intel_Storage_Traveler.py </path/to/primary/ssd"> --secondary_ssd_path <"/path/to/secondary/ssd">
 
 Run only the internal file transfer test with a 20GB test file:
 
-py Intel_Storage_Traveler.py </path/to/primary/ssd> </path/to/secondary/ssd> --file-size 20 --test internal
+py Intel_Storage_Traveler.py </path/to/primary/ssd> --secondary_ssd_path </path/to/secondary/ssd> --file-size <20> --test <internal>
+
+Run sequential read and write tests only:
+
+py Intel_Storage_Traveler.py </path/to/primary/ssd> --test <sequential>
 
 ## License
 
