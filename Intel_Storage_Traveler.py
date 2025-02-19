@@ -3,6 +3,7 @@ import shutil
 import time
 import argparse
 import logging
+import subprocess
 
 def setup_logging(log_file='test_log.log'):
     """Set up logging configuration."""
@@ -37,6 +38,27 @@ def begin_travel(source, destination):
         print(message)
         logging.error(message)
         return None
+
+def train_travel(file_path, size_gb, operation='write'):
+    """Test sequential I/O speed using dd and measure the time taken."""
+    if operation == 'write':
+        message = f"Testing sequential write speed for {size_gb}GB file..."
+        command = f"dd if=/dev/zero of={file_path} bs=1M count={size_gb * 1024} oflag=direct"
+    elif operation == 'read':
+        message = f"Testing sequential read speed for {size_gb}GB file..."
+        command = f"dd if={file_path} of=/dev/null bs=1M count={size_gb * 1024} iflag=direct"
+    else:
+        raise ValueError("Invalid operation. Use 'write' or 'read'.")
+
+    print(message)
+    logging.info(message)
+    start_time = time.time()
+    subprocess.run(command, shell=True)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    message = f"{operation.capitalize()} operation completed in {elapsed_time:.2f} seconds."
+    print(message)
+    logging.info(message)
 
 def domestic_travel(file_path, primary_ssd_path, cycles=1):
     """Test transferring a file within the primary SSD."""
@@ -170,6 +192,10 @@ def main():
         domestic_travel(test_file_path, args.primary_ssd_path, args.cycles)
     if args.test in ['external', 'both']:
         interstate_travel(test_file_path, args.primary_ssd_path, args.secondary_ssd_path, args.cycles)
+
+    # Perform sequential read and write tests
+    train_travel(test_file_path, args.file_size, operation='write')
+    train_travel(test_file_path, args.file_size, operation='read')
 
     # Delete the test file after all tests are done
     if os.path.exists(test_file_path):
