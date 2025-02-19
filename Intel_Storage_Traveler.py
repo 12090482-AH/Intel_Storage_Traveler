@@ -40,24 +40,38 @@ def begin_travel(source, destination):
         return None
 
 def train_travel(file_path, size_gb, operation='write'):
-    """Test sequential I/O speed using dd and measure the time taken."""
+    """Test sequential I/O speed using Python and measure the time taken."""
+    buffer_size = 1024 * 1024  # 1 MB buffer
+    total_size = size_gb * 1024 * 1024 * 1024  # Convert GB to bytes
+
     if operation == 'write':
         message = f"Testing sequential write speed for {size_gb}GB file..."
-        command = f"dd if=/dev/zero of={file_path} bs=1M count={size_gb * 1024} oflag=direct"
+        print_to_terminal(message)
+        logging.info(message)
+        start_time = time.time()
+        with open(file_path, 'wb') as f:
+            written = 0
+            while written < total_size:
+                f.write(b'\0' * buffer_size)
+                written += buffer_size
+        end_time = time.time()
+
     elif operation == 'read':
         message = f"Testing sequential read speed for {size_gb}GB file..."
-        command = f"dd if={file_path} of=/dev/null bs=1M count={size_gb * 1024} iflag=direct"
+        print_to_terminal(message)
+        logging.info(message)
+        start_time = time.time()
+        with open(file_path, 'rb') as f:
+            while f.read(buffer_size):
+                pass
+        end_time = time.time()
+
     else:
         raise ValueError("Invalid operation. Use 'write' or 'read'.")
 
-    print(message)
-    logging.info(message)
-    start_time = time.time()
-    subprocess.run(command, shell=True)
-    end_time = time.time()
     elapsed_time = end_time - start_time
     message = f"{operation.capitalize()} operation completed in {elapsed_time:.2f} seconds."
-    print(message)
+    print_to_terminal(message)
     logging.info(message)
 
 def domestic_travel(file_path, primary_ssd_path, cycles=1):
