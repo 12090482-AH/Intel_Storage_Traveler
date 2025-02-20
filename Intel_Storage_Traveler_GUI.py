@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import time
 import logging
@@ -7,6 +8,15 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import threading
+
+def resource_path(relative_path):
+    """This is for the standalone build purpose"""
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 def setup_logging(log_file='test_log.log'):
     """Set up logging configuration."""
@@ -238,8 +248,8 @@ def print_to_terminal(message):
     terminal_text.see(ctk.END)
 
 # GUI Setup
-ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
-ctk.set_default_color_theme("blue")  # Themes: blue (default), dark-blue, green
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
 root = ctk.CTk()
 root.title("Intel NVMe SSD Performance Testing Tool")
@@ -252,7 +262,7 @@ cycles = ctk.StringVar(value="1")
 log_file = ctk.StringVar(value="test_log.log")
 
 # Load and display the Intel logo
-logo_image = Image.open("intel_logo.png")
+logo_image = Image.open(resource_path("intel_logo.png"))
 logo_image = logo_image.resize((100, 50), Image.Resampling.LANCZOS)
 logo_photo = ImageTk.PhotoImage(logo_image)
 logo_label = ctk.CTkLabel(root, image=logo_photo, text="")

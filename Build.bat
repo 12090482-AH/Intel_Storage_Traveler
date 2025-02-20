@@ -1,0 +1,1 @@
+pyinstaller --onefile --name "Intel Storage Traveler" --add-data "intel_logo.png;." --icon "Intel_SSD_NVMe_icon.ico" Intel_Storage_Traveler_GUI.py
