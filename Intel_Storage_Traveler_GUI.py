@@ -52,15 +52,37 @@ def begin_travel(source, destination):
         logging.error(message)
         return None
 
-def train_travel(file_path, size_gb, operation='write'):
-    """Test sequential I/O speed using Python and measure the time taken."""
+def train_travel(file_path, size_gb, cycles=1):
+    """Test sequential R/W speed using Python and measure the time taken for both read and write operations."""
     buffer_size = 1024 * 1024  # 1 MB buffer
     total_size = size_gb * 1024 * 1024 * 1024  # Convert GB to bytes
 
-    if operation == 'write':
-        message = f"Testing sequential write speed for {size_gb}GB file..."
+    message = "Starting sequential R/W test...\n"
+    print_to_terminal(message)
+    logging.info(message)
+
+    total_suite_time = 0
+
+    for cycle in range(cycles):
+        message = f"Cycle {cycle + 1} of {cycles}"
         print_to_terminal(message)
         logging.info(message)
+
+        start_suite_time = time.time()
+
+        # Read Operation
+        start_time = time.time()
+        with open(file_path, 'rb') as f:
+            while f.read(buffer_size):
+                pass
+        end_time = time.time()
+        read_time = end_time - start_time
+
+        message = f"read operation completed in {read_time:.2f} seconds."
+        print_to_terminal(message)
+        logging.info(message)
+
+        # Write Operation
         start_time = time.time()
         with open(file_path, 'wb') as f:
             written = 0
@@ -68,22 +90,21 @@ def train_travel(file_path, size_gb, operation='write'):
                 f.write(b'\0' * buffer_size)
                 written += buffer_size
         end_time = time.time()
+        write_time = end_time - start_time
 
-    elif operation == 'read':
-        message = f"Testing sequential read speed for {size_gb}GB file..."
+        message = f"write operation completed in {write_time:.2f} seconds."
         print_to_terminal(message)
         logging.info(message)
-        start_time = time.time()
-        with open(file_path, 'rb') as f:
-            while f.read(buffer_size):
-                pass
-        end_time = time.time()
 
-    else:
-        raise ValueError("Invalid operation. Use 'write' or 'read'.\n")
+        end_suite_time = time.time()
+        cycle_time = end_suite_time - start_suite_time
+        total_suite_time += cycle_time
 
-    elapsed_time = end_time - start_time
-    message = f"{operation.capitalize()} operation completed in {elapsed_time:.2f} seconds.\n"
+        message = f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.\n"
+        print_to_terminal(message)
+        logging.info(message)
+
+    message = f"Total time for {cycles} sequential R/W cycles: {total_suite_time:.2f} seconds."
     print_to_terminal(message)
     logging.info(message)
 
@@ -195,6 +216,7 @@ def run_tests(primary_ssd_path, secondary_ssd_path, file_size, test_type, cycles
         print_to_terminal(message)
         logging.error(message)
         return
+
     if secondary_ssd_path and not os.path.exists(secondary_ssd_path):
         message = f"Secondary SSD path does not exist: {secondary_ssd_path}"
         print_to_terminal(message)
@@ -211,15 +233,14 @@ def run_tests(primary_ssd_path, secondary_ssd_path, file_size, test_type, cycles
     if test_type in ['external', 'all']:
         interstate_travel(test_file_path, primary_ssd_path, secondary_ssd_path, cycles)
     if test_type in ['sequential', 'all']:
-        train_travel(test_file_path, file_size, operation='write')
-        train_travel(test_file_path, file_size, operation='read')
+        train_travel(test_file_path, file_size, cycles)
 
     # Delete the test file after all tests are done
     if os.path.exists(test_file_path):
         os.remove(test_file_path)
         message = "\n***All Tests Completed***\n"
         print_to_terminal(message)
-        logging.error(message)
+        logging.info(message)
 
 def select_primary_ssd():
     path = filedialog.askdirectory(title="Select Primary SSD Path")
