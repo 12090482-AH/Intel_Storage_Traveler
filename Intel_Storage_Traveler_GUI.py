@@ -35,7 +35,7 @@ def create_test_file(file_path, size_gb=50):
     with open(file_path, 'wb') as f:
         f.seek(size_gb * 1024 * 1024 * 1024 - 1)
         f.write(b'\0')
-    message = "Test file created successfully."
+    message = "Test file created successfully.\n"
     print_to_terminal(message)
     logging.info(message)
 
@@ -47,7 +47,7 @@ def begin_travel(source, destination):
         end_time = time.time()
         return end_time - start_time
     except Exception as e:
-        message = f"Error during file transfer from {source} to {destination}: {e}"
+        message = f"Error during file transfer from {source} to {destination}: {e}\n"
         print_to_terminal(message)
         logging.error(message)
         return None
@@ -80,16 +80,16 @@ def train_travel(file_path, size_gb, operation='write'):
         end_time = time.time()
 
     else:
-        raise ValueError("Invalid operation. Use 'write' or 'read'.")
+        raise ValueError("Invalid operation. Use 'write' or 'read'.\n")
 
     elapsed_time = end_time - start_time
-    message = f"{operation.capitalize()} operation completed in {elapsed_time:.2f} seconds."
+    message = f"{operation.capitalize()} operation completed in {elapsed_time:.2f} seconds.\n"
     print_to_terminal(message)
     logging.info(message)
 
 def domestic_travel(file_path, primary_ssd_path, cycles=1):
     """Test transferring a file within the primary SSD."""
-    message = "Starting internal file transfer test..."
+    message = "Starting internal file transfer test...\n"
     print_to_terminal(message)
     logging.info(message)
     total_suite_time = 0
@@ -109,14 +109,14 @@ def domestic_travel(file_path, primary_ssd_path, cycles=1):
             logging.info(message)
             os.remove(destination_path)  # Clean up
         else:
-            message = "Internal file transfer failed."
+            message = "\nInternal file transfer failed."
             print_to_terminal(message)
             logging.warning(message)
 
         end_suite_time = time.time()
         cycle_time = end_suite_time - start_suite_time
         total_suite_time += cycle_time
-        message = f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds."
+        message = f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.\n"
         print_to_terminal(message)
         logging.info(message)
 
@@ -126,7 +126,7 @@ def domestic_travel(file_path, primary_ssd_path, cycles=1):
 
 def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1):
     """Test transferring a file from primary to secondary SSD and back."""
-    message = "Starting external file transfer test..."
+    message = "Starting external file transfer test...\n"
     print_to_terminal(message)
     logging.info(message)
     total_suite_time = 0
@@ -142,7 +142,7 @@ def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1)
         transfer_time_to_secondary = begin_travel(file_path, destination_path)
         
         if transfer_time_to_secondary is not None:
-            message = f"Transfer to secondary SSD completed in {transfer_time_to_secondary:.2f} seconds."
+            message = f"Transfer to secondary storage completed in {transfer_time_to_secondary:.2f} seconds."
             print_to_terminal(message)
             logging.info(message)
             
@@ -151,25 +151,25 @@ def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1)
             transfer_time_to_primary = begin_travel(destination_path, return_path)
             
             if transfer_time_to_primary is not None:
-                message = f"Transfer back to primary SSD completed in {transfer_time_to_primary:.2f} seconds."
+                message = f"Transfer back to primary storage completed in {transfer_time_to_primary:.2f} seconds."
                 print_to_terminal(message)
                 logging.info(message)
                 os.remove(return_path)  # Clean up
             else:
-                message = "Transfer back to primary SSD failed."
+                message = "\nTransfer back to primary SSD failed."
                 print_to_terminal(message)
                 logging.warning(message)
             
             os.remove(destination_path)  # Clean up
         else:
-            message = "Transfer to secondary SSD failed."
+            message = "\nTransfer to secondary storage failed."
             print_to_terminal(message)
             logging.warning(message)
 
         end_suite_time = time.time()
         cycle_time = end_suite_time - start_suite_time
         total_suite_time += cycle_time
-        message = f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds."
+        message = f"Cycle {cycle + 1} completed in {cycle_time:.2f} seconds.\n"
         print_to_terminal(message)
         logging.info(message)
 
@@ -217,6 +217,9 @@ def run_tests(primary_ssd_path, secondary_ssd_path, file_size, test_type, cycles
     # Delete the test file after all tests are done
     if os.path.exists(test_file_path):
         os.remove(test_file_path)
+        message = "\n***All Tests Completed***\n"
+        print_to_terminal(message)
+        logging.error(message)
 
 def select_primary_ssd():
     path = filedialog.askdirectory(title="Select Primary SSD Path")
@@ -238,7 +241,7 @@ def start_test():
             log_file.get()
         )).start()
     except Exception as e:
-        messagebox.showerror("Error", f"An error occurred: {e}")
+        messagebox.showerror("Error", f"An error occurred: {e}\n")
 
 def print_to_terminal(message):
     """Print message to the text widget terminal."""
