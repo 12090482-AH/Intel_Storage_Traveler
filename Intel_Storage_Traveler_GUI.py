@@ -4,6 +4,7 @@ import shutil
 import time
 import logging
 import subprocess
+import concurrent.futures
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
@@ -52,8 +53,8 @@ def begin_travel(source, destination):
         logging.error(message)
         return None
 
-def train_travel(file_path, size_gb, cycles=1):
-    """Test sequential R/W speed using Python and measure the time taken for both read and write operations."""
+def train_travel(file_path, size_gb, cycles=1, queue_depth=4):
+    """Test sequential R/W speed using Python with concurrent operations to simulate higher queue depth."""
     buffer_size = 1024 * 1024  # 1 MB buffer
     total_size = size_gb * 1024 * 1024 * 1024  # Convert GB to bytes
 
@@ -71,30 +72,32 @@ def train_travel(file_path, size_gb, cycles=1):
         start_suite_time = time.time()
 
         # Read Operation
-        start_time = time.time()
-        with open(file_path, 'rb') as f:
-            while f.read(buffer_size):
-                pass
-        end_time = time.time()
-        read_time = end_time - start_time
-
-        message = f"read operation completed in {read_time:.2f} seconds."
+        message = f"Testing sequential read speed for {size_gb}GB file..."
         print_to_terminal(message)
         logging.info(message)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=queue_depth) as executor:
+            futures = {executor.submit(read_from_file, file_path, buffer_size, total_size // queue_depth): i for i in range(queue_depth)}
+            for future in concurrent.futures.as_completed(futures):
+                index = futures[future]
+                read_time = future.result()
+                message = f"Cycle {cycle + 1}, Concurrent read {index + 1} completed in {read_time:.2f} seconds."
+                print_to_terminal(message)
+                logging.info(message)
 
         # Write Operation
-        start_time = time.time()
-        with open(file_path, 'wb') as f:
-            written = 0
-            while written < total_size:
-                f.write(b'\0' * buffer_size)
-                written += buffer_size
-        end_time = time.time()
-        write_time = end_time - start_time
-
-        message = f"write operation completed in {write_time:.2f} seconds."
+        message = f"Testing sequential write speed for {size_gb}GB file..."
         print_to_terminal(message)
         logging.info(message)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=queue_depth) as executor:
+            futures = {executor.submit(write_to_file, file_path, buffer_size, total_size // queue_depth): i for i in range(queue_depth)}
+            for future in concurrent.futures.as_completed(futures):
+                index = futures[future]
+                write_time = future.result()
+                message = f"Cycle {cycle + 1}, Concurrent write {index + 1} completed in {write_time:.2f} seconds."
+                print_to_terminal(message)
+                logging.info(message)
 
         end_suite_time = time.time()
         cycle_time = end_suite_time - start_suite_time
@@ -107,6 +110,35 @@ def train_travel(file_path, size_gb, cycles=1):
     message = f"Total time for {cycles} sequential R/W cycles: {total_suite_time:.2f} seconds."
     print_to_terminal(message)
     logging.info(message)
+
+def write_to_file(file_path, buffer_size, size):
+    """Write data to a file and return the time taken."""
+    start_time = time.time()
+    with open(file_path, 'wb') as f:
+        written = 0
+        while written < size:
+            f.write(b'\0' * buffer_size)
+            written += buffer_size
+    end_time = time.time()
+    return end_time - start_time
+
+def read_from_file(file_path, buffer_size, size):
+    """Read data from a file and return the time taken."""
+    start_time = time.time()
+    with open(file_path, 'rb') as f:
+        read = 0
+        while read < size:
+            f.read(buffer_size)
+            read += buffer_size
+    end_time = time.time()
+    return end_time - start_time
+
+def print_to_terminal(message):
+    """Print message to the text widget terminal."""
+    terminal_text.configure(state='normal')
+    terminal_text.insert(ctk.END, message + '\n')
+    terminal_text.configure(state='disabled')
+    terminal_text.see(ctk.END)
 
 def domestic_travel(file_path, primary_ssd_path, cycles=1):
     """Test transferring a file within the primary SSD."""
@@ -128,7 +160,7 @@ def domestic_travel(file_path, primary_ssd_path, cycles=1):
             message = f"Internal file transfer completed in {transfer_time:.2f} seconds."
             print_to_terminal(message)
             logging.info(message)
-            os.remove(destination_path)  # Clean up
+            os.remove(destination_path)
         else:
             message = "\nInternal file transfer failed."
             print_to_terminal(message)
@@ -175,13 +207,13 @@ def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1)
                 message = f"Transfer back to primary storage completed in {transfer_time_to_primary:.2f} seconds."
                 print_to_terminal(message)
                 logging.info(message)
-                os.remove(return_path)  # Clean up
+                os.remove(return_path)
             else:
                 message = "\nTransfer back to primary SSD failed."
                 print_to_terminal(message)
                 logging.warning(message)
             
-            os.remove(destination_path)  # Clean up
+            os.remove(destination_path)
         else:
             message = "\nTransfer to secondary storage failed."
             print_to_terminal(message)
@@ -198,9 +230,8 @@ def interstate_travel(file_path, primary_ssd_path, secondary_ssd_path, cycles=1)
     print_to_terminal(message)
     logging.info(message)
 
-def run_tests(primary_ssd_path, secondary_ssd_path, file_size, test_type, cycles, log_file):
+def run_tests(primary_ssd_path, secondary_ssd_path, file_size, test_type, cycles, log_file, queue_depth):
     setup_logging(log_file)
-
     test_file_path = os.path.join(primary_ssd_path, 'test_file')
 
     # Ensure primary path is valid
@@ -233,7 +264,7 @@ def run_tests(primary_ssd_path, secondary_ssd_path, file_size, test_type, cycles
     if test_type in ['external', 'all']:
         interstate_travel(test_file_path, primary_ssd_path, secondary_ssd_path, cycles)
     if test_type in ['sequential', 'all']:
-        train_travel(test_file_path, file_size, cycles)
+        train_travel(test_file_path, file_size, cycles, queue_depth)
 
     # Delete the test file after all tests are done
     if os.path.exists(test_file_path):
@@ -259,17 +290,11 @@ def start_test():
             int(file_size.get()),
             test_type.get(),
             int(cycles.get()),
-            log_file.get()
+            log_file.get(),
+            int(queue_depth.get())  # Pass the queue depth
         )).start()
     except Exception as e:
-        messagebox.showerror("Error", f"An error occurred: {e}\n")
-
-def print_to_terminal(message):
-    """Print message to the text widget terminal."""
-    terminal_text.configure(state='normal')
-    terminal_text.insert(ctk.END, message + '\n')
-    terminal_text.configure(state='disabled')
-    terminal_text.see(ctk.END)
+        messagebox.showerror("Error", f"An error occurred: {e}")
 
 # GUI Setup
 ctk.set_appearance_mode("light")
@@ -284,6 +309,7 @@ file_size = ctk.StringVar(value="50")
 test_type = ctk.StringVar(value="all")
 cycles = ctk.StringVar(value="1")
 log_file = ctk.StringVar(value="test_log.log")
+queue_depth = ctk.StringVar(value="32")
 
 # Load and display the Intel logo
 logo_image = Image.open(resource_path("intel_logo.png"))
@@ -292,6 +318,7 @@ logo_photo = ImageTk.PhotoImage(logo_image)
 logo_label = ctk.CTkLabel(root, image=logo_photo, text="")
 logo_label.grid(row=0, column=0, pady=10, padx=0)
 
+# Configure labels and entries
 ctk.CTkLabel(root, text="Primary SSD Path:").grid(row=1, column=0, sticky=ctk.W, padx=10, pady=5)
 ctk.CTkEntry(root, textvariable=primary_ssd_path, width=400).grid(row=1, column=1, padx=10, pady=5)
 ctk.CTkButton(root, text="Browse", command=select_primary_ssd).grid(row=1, column=2, padx=10, pady=5)
@@ -309,13 +336,16 @@ ctk.CTkOptionMenu(root, variable=test_type, values=["internal", "external", "seq
 ctk.CTkLabel(root, text="Cycles:").grid(row=5, column=0, sticky=ctk.W, padx=10, pady=5)
 ctk.CTkEntry(root, textvariable=cycles).grid(row=5, column=1, sticky=ctk.W, padx=10, pady=5)
 
-ctk.CTkLabel(root, text="Log File:").grid(row=6, column=0, sticky=ctk.W, padx=10, pady=5)
-ctk.CTkEntry(root, textvariable=log_file).grid(row=6, column=1, sticky=ctk.W, padx=10, pady=5)
+ctk.CTkLabel(root, text="Queue Depth:").grid(row=6, column=0, sticky=ctk.W, padx=10, pady=5)
+ctk.CTkEntry(root, textvariable=queue_depth).grid(row=6, column=1, sticky=ctk.W, padx=10, pady=5)
+
+ctk.CTkLabel(root, text="Log File:").grid(row=7, column=0, sticky=ctk.W, padx=10, pady=5)
+ctk.CTkEntry(root, textvariable=log_file).grid(row=7, column=1, sticky=ctk.W, padx=10, pady=5)
 
 # Terminal for test output
 terminal_text = ctk.CTkTextbox(root, width=400, height=150, state='disabled')
 terminal_text.place(relx=0.7, rely=0.4, anchor='n')
 
-ctk.CTkButton(root, text="Start Test", command=start_test).grid(row=7, column=1, pady=20)
+ctk.CTkButton(root, text="Start Test", command=start_test).grid(row=8, column=1, pady=20)
 
 root.mainloop()
